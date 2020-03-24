@@ -22,10 +22,19 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Random;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import android.Manifest;
 import android.content.Context;
@@ -140,6 +149,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         this.mMap = googleMap;
 
         LatLng place = mGnssListener.getLastPoint();
+        reloadData();
         this.refreshMapOfObjects();
 
         if (this.iGPSFix && place != null) {
@@ -175,6 +185,73 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             maJavaObjects.add(jobj);
         }
+
+    }
+
+    public ArrayList<oJSONJavaObject> readPlacesData(String pFilename) {
+        ArrayList<oJSONJavaObject> tmp = null;
+        try {
+            FileInputStream fileIn = new FileInputStream(pFilename);
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            tmp = (ArrayList<oJSONJavaObject>) in.readObject();
+            in.close();
+            fileIn.close();
+            System.out.printf("Serialized data is loaded from " + pFilename);
+        } catch (IOException i) {
+            i.printStackTrace();
+            return null;
+        } catch (ClassNotFoundException c) {
+            System.out.println("Class not found");
+            c.printStackTrace();
+            return null;
+        }
+
+        return tmp;
+    }
+
+    public ArrayList<oJSONJavaObject> writePlacesData(String pFilename)  {
+        ArrayList<oJSONJavaObject> tmp = maJavaObjects;
+
+        try {
+            FileOutputStream fileOut = new FileOutputStream(pFilename);
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(tmp);
+            out.close();
+            fileOut.close();
+            System.out.printf("Serialized data is saved in " + pFilename);
+        } catch (IOException i) {
+            i.printStackTrace();
+        }
+
+        return tmp;
+    }
+
+    public ArrayList<oJSONJavaObject> reloadData()
+    {
+        String theFilenameStr = getFilesDir() + "/whereiwasmapper.bin";
+        ArrayList<oJSONJavaObject> oldData = readPlacesData(theFilenameStr);
+        ArrayList<oJSONJavaObject> currentData = maJavaObjects;
+        ArrayList<oJSONJavaObject> newData = new ArrayList<oJSONJavaObject>();
+
+        if (oldData != null) {
+            for (oJSONJavaObject job : oldData) {
+                newData.add(job);
+            }
+        }
+
+        if (currentData != null) {
+            for (oJSONJavaObject job : currentData) {
+                newData.add(job);
+            }
+        }
+
+        maJavaObjects = newData;
+
+        this.refreshMapOfObjects();
+
+        writePlacesData(theFilenameStr);
+
+        return newData;
     }
 
     public void GPSLocation_changed() {
@@ -200,7 +277,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         maJavaObjects.add(jobj);
 
-        addRandomPositions();
+//        this.addRandomPositions();
 
         this.refreshMapOfObjects();
 
