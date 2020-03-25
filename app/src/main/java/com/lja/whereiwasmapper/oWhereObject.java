@@ -1,8 +1,5 @@
 package com.lja.whereiwasmapper;
 
-import android.app.PendingIntent;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.location.LocationManager;
 import android.widget.Toast;
 
@@ -12,13 +9,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-public class oJSONJavaObject implements OnMarkerClickListener
+public class oWhereObject implements OnMarkerClickListener
 {
 
     public    oStampedLocation    mStampedLocation = null;
@@ -34,7 +30,7 @@ public class oJSONJavaObject implements OnMarkerClickListener
     public    MapsActivity        mMyMapsActivity;
 
 
-    public oJSONJavaObject(
+    public oWhereObject(
             MapsActivity    mapsActivity,
             GoogleMap googleMap,
             long   pTimeSinceEPOCH,

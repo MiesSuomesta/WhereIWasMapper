@@ -1,5 +1,6 @@
 package com.lja.whereiwasmapper;
 
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
@@ -57,7 +58,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public Boolean iGPSFix = false;
     private SatelliteListener mGnssListener;
 
-    private ArrayList<oJSONJavaObject> maJavaObjects = null;
+    private ArrayList<oWhereObject> maJavaObjects = null;
 
     private LatLng lastGpsPoint;
 
@@ -67,7 +68,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Long tsNow = System.currentTimeMillis()/1000;
         Long tsOldest = tsNow - (howManyDaysToKeepData*24*60*60);
 
-        for (oJSONJavaObject job: maJavaObjects)
+        for (oWhereObject job: maJavaObjects)
         {
             long oTS = job.getTimeSinceEPOCH();
             if (oTS < tsOldest)
@@ -87,10 +88,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.clear();
 
-        for (oJSONJavaObject job: maJavaObjects)
+        for (oWhereObject job: maJavaObjects)
         {
             Marker dp = job.getMarkerForGmaps();
 //            mMap.addMarker(dp.get);
+        }
+    }
+
+    public boolean doesAppHaveNeededPermissions(String permissionID)
+    {
+        if (ContextCompat.checkSelfPermission(this,
+                permissionID)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    permissionID)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_CONTACTS},
+                        MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        } else {
+            // Permission has already been granted
         }
     }
 
@@ -107,7 +136,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        maJavaObjects = new ArrayList<oJSONJavaObject>();
+        maJavaObjects = new ArrayList<oWhereObject>();
 
         int checkF = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
         int checkC = checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
@@ -161,7 +190,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         int count = 10;
         int longitude,latitude;
-        oJSONJavaObject jobj;
+        oWhereObject jobj;
         long ts = 0;
         Random r = new Random();
 
@@ -173,7 +202,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             longitude = r.nextInt(360) - 180;
             latitude  = r.nextInt(180) - 90;
 
-            jobj = new oJSONJavaObject(
+            jobj = new oWhereObject(
                     this,
                     this.mMap,
                     ts,
@@ -188,10 +217,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    public oJSONJavaObject newLocationObjForPositions(long ts, double longitude, double latitude) {
-        oJSONJavaObject jobj;
+    public oWhereObject newLocationObjForPositions(long ts, double longitude, double latitude) {
+        oWhereObject jobj;
 
-        jobj = new oJSONJavaObject(
+        jobj = new oWhereObject(
                 this,
                 this.mMap,
                 ts,
@@ -204,9 +233,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return jobj;
     }
 
-    public ArrayList<oJSONJavaObject> readPlacesData(String pFilename) {
+    public ArrayList<oWhereObject> readPlacesData(String pFilename) {
         ArrayList<oStampedLocation> tmpST = null;
-        ArrayList<oJSONJavaObject>  tmpJO = null;
+        ArrayList<oWhereObject>  tmpJO = null;
 
         try {
             FileInputStream fileIn = new FileInputStream(pFilename);
@@ -225,7 +254,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         if (tmpST != null) {
-            tmpJO = new ArrayList<oJSONJavaObject>();
+            tmpJO = new ArrayList<oWhereObject>();
             for (oStampedLocation job : tmpST) {
                 tmpJO.add(
                         newLocationObjForPositions(
@@ -239,16 +268,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return tmpJO;
     }
 
-    public ArrayList<oJSONJavaObject> writePlacesData(String pFilename)  {
-        ArrayList<oJSONJavaObject> tmp = maJavaObjects;
+    public ArrayList<oWhereObject> writePlacesData(String pFilename)  {
+        ArrayList<oWhereObject> tmp = maJavaObjects;
 
         ArrayList<oStampedLocation> tmpST = null;
-        ArrayList<oJSONJavaObject>  tmpJO = maJavaObjects;
+        ArrayList<oWhereObject>  tmpJO = maJavaObjects;
 
         if (maJavaObjects != null) {
             tmpST = new ArrayList<oStampedLocation>();
 
-            for (oJSONJavaObject job : maJavaObjects) {
+            for (oWhereObject job : maJavaObjects) {
                 tmpST.add(job.getmStampedLocation());
             }
         }
@@ -267,23 +296,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return tmp;
     }
 
-    public ArrayList<oJSONJavaObject> reloadData()
+    public ArrayList<oWhereObject> reloadData()
     {
         String theFilenameStr = getFilesDir() + "/whereiwasmapper.bin";
-        ArrayList<oJSONJavaObject> oldData = null;
-        ArrayList<oJSONJavaObject> currentData = maJavaObjects;
-        ArrayList<oJSONJavaObject> newData = new ArrayList<oJSONJavaObject>();
+        ArrayList<oWhereObject> oldData = null;
+        ArrayList<oWhereObject> currentData = maJavaObjects;
+        ArrayList<oWhereObject> newData = new ArrayList<oWhereObject>();
 
         oldData = readPlacesData(theFilenameStr);
 
         if (oldData != null) {
-            for (oJSONJavaObject job : oldData) {
+            for (oWhereObject job : oldData) {
                 newData.add(job);
             }
         }
 
         if (currentData != null) {
-            for (oJSONJavaObject job : currentData) {
+            for (oWhereObject job : currentData) {
                 newData.add(job);
             }
         }
@@ -300,7 +329,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void GPSLocation_changed() {
         LatLng place = mGnssListener.getLastPoint();
 
-        oJSONJavaObject jobj;
+        oWhereObject jobj;
         long ts = 0;
 
         if (place == null)
@@ -308,7 +337,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         ts = mGnssListener.getTimestamp();
 
-        jobj = new oJSONJavaObject(
+        jobj = new oWhereObject(
                 this,
                 this.mMap,
                 ts,

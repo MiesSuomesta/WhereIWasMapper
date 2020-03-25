@@ -21,13 +21,13 @@ public class oJsonToObject {
 
     public oJsonToObject() {}
 
-    public oJSONJavaObject jsonObjectToJavaObject(MapsActivity    mapsActivity,
+    public oWhereObject jsonObjectToJavaObject(MapsActivity    mapsActivity,
                                                   GoogleMap       googleMap,
                                                   JSONObject      featureObj,
                                                   Boolean         PermissionsOK,
                                                   LocationManager pLocman)
     {
-        oJSONJavaObject ret = null;
+        oWhereObject ret = null;
 
         try {
 
@@ -35,7 +35,7 @@ public class oJsonToObject {
             double Longitude            = featureObj.getDouble("longitude");
             double Latitude             = featureObj.getDouble("latitude");
 
-            ret = new oJSONJavaObject(
+            ret = new oWhereObject(
                     mapsActivity,
                     googleMap,
                     timeSinceEPOCH,
