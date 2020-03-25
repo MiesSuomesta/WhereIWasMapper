@@ -229,9 +229,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public ArrayList<oJSONJavaObject> reloadData()
     {
         String theFilenameStr = getFilesDir() + "/whereiwasmapper.bin";
-        ArrayList<oJSONJavaObject> oldData = readPlacesData(theFilenameStr);
+        ArrayList<oJSONJavaObject> oldData = null;
         ArrayList<oJSONJavaObject> currentData = maJavaObjects;
         ArrayList<oJSONJavaObject> newData = new ArrayList<oJSONJavaObject>();
+
+        oldData = readPlacesData(theFilenameStr);
 
         if (oldData != null) {
             for (oJSONJavaObject job : oldData) {
