@@ -188,12 +188,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    public oJSONJavaObject newLocationObjForPositions(long ts, double longitude, double latitude) {
+        oJSONJavaObject jobj;
+
+        jobj = new oJSONJavaObject(
+                this,
+                this.mMap,
+                ts,
+                longitude,
+                latitude,
+                PermissionsAndLocmanOK,
+                locationManager
+        );
+
+        return jobj;
+    }
+
     public ArrayList<oJSONJavaObject> readPlacesData(String pFilename) {
-        ArrayList<oJSONJavaObject> tmp = null;
+        ArrayList<oStampedLocation> tmpST = null;
+        ArrayList<oJSONJavaObject>  tmpJO = null;
+
         try {
             FileInputStream fileIn = new FileInputStream(pFilename);
             ObjectInputStream in = new ObjectInputStream(fileIn);
-            tmp = (ArrayList<oJSONJavaObject>) in.readObject();
+            tmpST = (ArrayList<oStampedLocation>) in.readObject();
             in.close();
             fileIn.close();
             System.out.printf("Serialized data is loaded from " + pFilename);
@@ -206,16 +224,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return null;
         }
 
-        return tmp;
+        if (tmpST != null) {
+            tmpJO = new ArrayList<oJSONJavaObject>();
+            for (oStampedLocation job : tmpST) {
+                tmpJO.add(
+                        newLocationObjForPositions(
+                                job.getTimeSinceEPOCH(),
+                                job.getLongitude(),
+                                job.getLatitude())
+                );
+            }
+        }
+
+        return tmpJO;
     }
 
     public ArrayList<oJSONJavaObject> writePlacesData(String pFilename)  {
         ArrayList<oJSONJavaObject> tmp = maJavaObjects;
 
+        ArrayList<oStampedLocation> tmpST = null;
+        ArrayList<oJSONJavaObject>  tmpJO = maJavaObjects;
+
+        if (maJavaObjects != null) {
+            tmpST = new ArrayList<oStampedLocation>();
+
+            for (oJSONJavaObject job : maJavaObjects) {
+                tmpST.add(job.getmStampedLocation());
+            }
+        }
+
         try {
             FileOutputStream fileOut = new FileOutputStream(pFilename);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
-            out.writeObject(tmp);
+            out.writeObject(tmpST);
             out.close();
             fileOut.close();
             System.out.printf("Serialized data is saved in " + pFilename);

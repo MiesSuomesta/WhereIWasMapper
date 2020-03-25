@@ -12,6 +12,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -20,9 +21,7 @@ import java.util.TimeZone;
 public class oJSONJavaObject implements OnMarkerClickListener
 {
 
-    public    long                mTimeSinceEPOCH = 0;
-    public    double              mLongitude = 0;
-    public    double              mLatitude = 0;
+    public    oStampedLocation    mStampedLocation = null;
     public    double              mDeviceLongitude = 0;
     public    double              mDeviceLatitude = 0;
 
@@ -46,9 +45,7 @@ public class oJSONJavaObject implements OnMarkerClickListener
     {
         // setup variables
         mMap = googleMap;
-        mTimeSinceEPOCH = pTimeSinceEPOCH;
-        mLongitude = pLongitude;
-        mLatitude = pLatitude;
+        mStampedLocation = new oStampedLocation(pTimeSinceEPOCH, pLongitude, pLatitude);
         mMyMapsActivity = mapsActivity;
 
         dateFormatter = new SimpleDateFormat("dd-MM-yyyy'T'HH:mm:ss.SSSXXX");
@@ -62,13 +59,20 @@ public class oJSONJavaObject implements OnMarkerClickListener
 
     }
 
+    public oStampedLocation getmStampedLocation() {
+        return mStampedLocation;
+    }
+
+    public void setmStampedLocation(oStampedLocation mStampedLocation) {
+        this.mStampedLocation = mStampedLocation;
+    }
 
     public long getTimeSinceEPOCH() {
-        return mTimeSinceEPOCH;
+        return this.mStampedLocation.getTimeSinceEPOCH();
     }
 
     public void setTimeSinceEPOCH(long mTimeSinceEPOCH) {
-        this.mTimeSinceEPOCH = mTimeSinceEPOCH;
+        this.mStampedLocation.setTimeSinceEPOCH(mTimeSinceEPOCH);
     }
 
 
@@ -109,44 +113,16 @@ public class oJSONJavaObject implements OnMarkerClickListener
             double devLat = pLatLngDevice.latitude;
             double devLng = pLatLngDevice.longitude;
 
-            ret = this.distance(mLatitude, mLongitude, devLat, devLng);
+            ret = this.distance(this.mStampedLocation.getLatitude(),
+                                this.mStampedLocation.getLongitude(),
+                                devLat,
+                                devLng);
+
         }
 
         return ret;
     }
 
-    public void setmLongitude(double mLongitude) {
-        this.mLongitude = mLongitude;
-    }
-
-    public void setmLatitude(double mLatitude) {
-        this.mLatitude = mLatitude;
-    }
-
-    public void setmMap(GoogleMap mMap) {
-        this.mMap = mMap;
-    }
-
-    public void setDateFormatter(DateFormat dateFormatter) {
-        this.dateFormatter = dateFormatter;
-    }
-
-
-    public double getmLongitude() {
-        return mLongitude;
-    }
-
-    public double getmLatitude() {
-        return mLatitude;
-    }
-
-    public double getmDeviceLongitude() {
-        return mDeviceLongitude;
-    }
-
-    public double getmDeviceLatitude() {
-        return mDeviceLatitude;
-    }
 
     public GoogleMap getmMap() {
         return this.mMap;
@@ -156,17 +132,10 @@ public class oJSONJavaObject implements OnMarkerClickListener
         return mLocman;
     }
 
-    public Boolean getmPermitted() {
-        return mPermitted;
-    }
-
     public MapsActivity getmMyMapsActivity() {
         return mMyMapsActivity;
     }
 
-    public Marker getmMarker() {
-        return mMarker;
-    }
     public Marker setmMarker(Marker foo) {
         mMarker = foo;
         return mMarker;
@@ -174,7 +143,8 @@ public class oJSONJavaObject implements OnMarkerClickListener
 
     public Marker getMarkerForGmaps()
     {
-        LatLng quakePoint = new LatLng(mLatitude, mLongitude);
+        LatLng quakePoint = new LatLng( this.mStampedLocation.getLatitude(),
+                                        this.mStampedLocation.getLongitude());
 
         setmMarker(null);
 
