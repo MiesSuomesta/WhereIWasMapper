@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Where I Was Mapper</string>
-    <string name="title_activity_maps">Map</string>
+    <string name="title_activity_maps">Where I Was Mapper</string>
+    <string name="permission_gps">Coarse or/and Fine GPS location data needed for application to work at all</string>
+    <string name="permission_readwrite">Permission to read and write to internal storage is needed for application to work at all</string>
+    <string name="ok">ok</string>
 </resources>
