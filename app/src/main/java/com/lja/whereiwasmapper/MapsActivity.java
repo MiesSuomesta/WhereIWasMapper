@@ -229,14 +229,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         maJavaObjects = new ArrayList<oWhereObject>();
 
         getPermission(Manifest.permission.ACCESS_FINE_LOCATION, REQUEST_GPS_FINE);
-        getPermission(Manifest.permission.ACCESS_COARSE_LOCATION, REQUEST_GPS_COARSE);
+//        getPermission(Manifest.permission.ACCESS_COARSE_LOCATION, REQUEST_GPS_COARSE);
 //        getPermission(Manifest.permission.READ_EXTERNAL_STORAGE, REQUEST_STORAGE_RW);
         getPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_STORAGE_WR);
         getPermission(Manifest.permission.INTERNET, REQUEST_INTERNET);
 
 
         int checkF  = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-        int checkC  = checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
+        int checkC  = 0; // checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
         int checkWR = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         int checkRW = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
         int checkI  = checkSelfPermission(Manifest.permission.INTERNET);
@@ -262,7 +262,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mGnssListener.onLocationChanged(tmpLoc);
 
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                                            600, 5, mGnssListener);
+                                            10*1000, 2, mGnssListener);
         }
 
     }
