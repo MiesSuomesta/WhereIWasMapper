@@ -30,7 +30,7 @@ public class SatelliteListener implements LocationListener {
     public void onLocationChanged(Location location) {
         mLocation = location;
 
-        Long tsLong = System.currentTimeMillis()/1000;
+        Long tsLong = System.currentTimeMillis();
         this.setTimestamp(tsLong);
         if (mMainUI != null) {
             mMainUI.iGPSFix = true;

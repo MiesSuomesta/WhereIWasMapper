@@ -13,6 +13,8 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+
+import com.google.android.gms.common.util.ArrayUtils;
 import com.google.android.material.snackbar.Snackbar;
 import android.view.View;
 
@@ -33,9 +35,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback;
+import static com.google.android.gms.common.util.ArrayUtils.appendToArray;
 import static com.google.android.material.snackbar.Snackbar.*;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
@@ -43,12 +48,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int REQUEST_GPS_FINE = 1;
     private static final int REQUEST_GPS_COARSE = 2;
-    private static final int REQUEST_STORAGE_RW = 3;
-    private static final int REQUEST_STORAGE_WR = 4;
-    private static final int REQUEST_INTERNET = 5;
+    private static final int REQUEST_STORAGE_RW = 4;
+    private static final int REQUEST_STORAGE_WR = 8;
+    private static final int REQUEST_INTERNET = 16;
 
     private GoogleMap mMap;
 
+    public HashMap<String, Integer> mHMappPermission = new HashMap<>();
+    public Integer  mIntPermissions = 0;
     public LocationManager locationManager = null;
     Boolean PermissionsAndLocmanOK = false;
     private Boolean iMapShowed = false;
@@ -57,6 +64,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private ArrayList<oWhereObject> maJavaObjects = null;
 
+    private boolean bFineOK       = false;
+    private boolean bCoarseOK     = false;
+    private boolean bInternetOK   = false;
+    private boolean bRWStorageOK  = false;
+    private boolean bWRStorageOK  = false;
+
     private LatLng lastGpsPoint;
 
     public View mMainView = null;
@@ -64,8 +77,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void cleanupObjectArray()
     {
         int  howManyDaysToKeepData = 21;
-        Long tsNow = System.currentTimeMillis()/1000;
-        Long tsOldest = tsNow - (howManyDaysToKeepData*24*60*60);
+        Long tsNow = System.currentTimeMillis();
+        Long tsOldest = tsNow - (howManyDaysToKeepData*24*60*60)*1000;
 
         for (oWhereObject job: maJavaObjects)
         {
@@ -96,118 +109,62 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void onRequestPermissionsResult(int requestCode,
                                            String[] permissions, int[] grantResults) {
-        /*
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_READ_CONTACTS: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-                } else {
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-            // other 'case' lines to check for other
-            // permissions this app might request.
-        }
-        */
 
+
+        int checkF  = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+        int checkC  = checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
+        int checkWR = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int checkRW = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
+        int checkI  = checkSelfPermission(Manifest.permission.INTERNET);
+
+        bFineOK       |= (checkF  == PackageManager.PERMISSION_GRANTED);
+        bCoarseOK     |= (checkC  == PackageManager.PERMISSION_GRANTED);
+        bInternetOK   |= (checkI  == PackageManager.PERMISSION_GRANTED);
+        bRWStorageOK  |= (checkRW == PackageManager.PERMISSION_GRANTED);
+        bWRStorageOK  |= (checkWR == PackageManager.PERMISSION_GRANTED);
+
+        PermissionsAndLocmanOK  = (bFineOK || bCoarseOK);
+        PermissionsAndLocmanOK &= (bInternetOK && bRWStorageOK && bWRStorageOK);
+
+        if (PermissionsAndLocmanOK)
+        {
+
+            Location tmpLoc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+            if (tmpLoc != null)
+                mGnssListener.onLocationChanged(tmpLoc);
+
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                    1000, 1, mGnssListener);
+        }
     }
 
-    public void getPermission(String permissionID, int permissionIntID)
+    public boolean checkAndReqPermissions()
     {
-        boolean RV = false;
-        if (ContextCompat.checkSelfPermission(this,
-                permissionID)
-                != PackageManager.PERMISSION_GRANTED) {
+        boolean rv = true;
 
-            // Permission is not granted
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    permissionID)) {
-                Snackbar messager = make(mMainView, permissionID, LENGTH_INDEFINITE);
-                View.OnClickListener msgView = null;
-                switch(permissionIntID)
-                {
-                    case REQUEST_GPS_COARSE:
-                        msgView = new View.OnClickListener() {
-                                @Override
-                                public void onClick(View view) {
-                                    ActivityCompat
-                                            .requestPermissions(MapsActivity.this,
-                                                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                                                    REQUEST_GPS_COARSE);
-                                }
-                            };
-                        break;
+        String[] perms= {};
 
-                    case REQUEST_GPS_FINE:
-                        msgView = new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                ActivityCompat
-                                        .requestPermissions(MapsActivity.this,
-                                                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                                REQUEST_GPS_FINE);
-                            }
-                        };
-                        break;
-
-                    case REQUEST_STORAGE_RW:
-                        msgView = new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                ActivityCompat
-                                        .requestPermissions(MapsActivity.this,
-                                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                                                REQUEST_STORAGE_RW);
-                            }
-                        };
-                        break;
-                    case REQUEST_STORAGE_WR:
-                        msgView = new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                ActivityCompat
-                                        .requestPermissions(MapsActivity.this,
-                                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                                                REQUEST_STORAGE_WR);
-                            }
-                        };
-                        break;
-
-                    case REQUEST_INTERNET:
-                        msgView = new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                ActivityCompat
-                                        .requestPermissions(MapsActivity.this,
-                                                new String[]{Manifest.permission.INTERNET},
-                                                REQUEST_STORAGE_WR);
-                            }
-                        };
-                        break;
-
-
-                    default: break;
-                }
-
-                if (msgView != null)
-                    messager.setAction(R.string.ok, msgView).show();
-
-            } else {
-                // No explanation needed; request the permission
-                ActivityCompat.requestPermissions(
-                        MapsActivity.this,
-                        new String[]{permissionID},
-                                     permissionIntID);
-            }
-        } else {
-            // Permission has already been granted
+        for(Map.Entry<String, Integer> perm : mHMappPermission.entrySet())
+        {
+            String permName = perm.getKey();
+            Integer permInt = perm.getValue();
+            perms = appendToArray(perms, permName);
+            mIntPermissions |= permInt;
         }
+
+        getPermission(perms, mIntPermissions);
+
+    return  rv;
+    }
+
+
+    public void  getPermission(String[] permissionIDs, int permissionIntID)
+    {
+        ActivityCompat.requestPermissions(MapsActivity.this,
+                                        permissionIDs,
+                                        permissionIntID);
+
     }
 
     @Override
@@ -217,6 +174,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mGnssListener = new SatelliteListener();
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        mHMappPermission.put(Manifest.permission.ACCESS_FINE_LOCATION,   REQUEST_GPS_FINE);
+        mHMappPermission.put(Manifest.permission.ACCESS_COARSE_LOCATION, REQUEST_GPS_COARSE);
+        mHMappPermission.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_STORAGE_WR);
+        mHMappPermission.put(Manifest.permission.READ_EXTERNAL_STORAGE,  REQUEST_STORAGE_RW);
+        mHMappPermission.put(Manifest.permission.INTERNET,               REQUEST_INTERNET);
+
+
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -228,42 +193,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         maJavaObjects = new ArrayList<oWhereObject>();
 
-        getPermission(Manifest.permission.ACCESS_FINE_LOCATION, REQUEST_GPS_FINE);
-//        getPermission(Manifest.permission.ACCESS_COARSE_LOCATION, REQUEST_GPS_COARSE);
-//        getPermission(Manifest.permission.READ_EXTERNAL_STORAGE, REQUEST_STORAGE_RW);
-        getPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, REQUEST_STORAGE_WR);
-        getPermission(Manifest.permission.INTERNET, REQUEST_INTERNET);
-
-
-        int checkF  = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-        int checkC  = 0; // checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
-        int checkWR = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        int checkRW = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
-        int checkI  = checkSelfPermission(Manifest.permission.INTERNET);
-
-        boolean bFineOK       = (checkF  == PackageManager.PERMISSION_GRANTED);
-        boolean bCoarseOK     = (checkC  == PackageManager.PERMISSION_GRANTED);
-        boolean bInternetOK   = (checkI  == PackageManager.PERMISSION_GRANTED);
-        boolean bRWStorageOK  = (checkRW == PackageManager.PERMISSION_GRANTED);
-        boolean bWRStorageOK  = (checkWR == PackageManager.PERMISSION_GRANTED);
-
-        PermissionsAndLocmanOK  = (locationManager != null);
-        PermissionsAndLocmanOK &= (bFineOK || bCoarseOK);
-        PermissionsAndLocmanOK &= (bInternetOK && bRWStorageOK && bWRStorageOK);
+        checkAndReqPermissions();
 
         mGnssListener.setUiComponent(this);
-
-        if (PermissionsAndLocmanOK)
-        {
-
-            Location tmpLoc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-            if (tmpLoc != null)
-                mGnssListener.onLocationChanged(tmpLoc);
-
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                                            10*1000, 2, mGnssListener);
-        }
 
     }
 
