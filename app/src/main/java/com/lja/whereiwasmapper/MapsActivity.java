@@ -135,7 +135,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mGnssListener.onLocationChanged(tmpLoc);
 
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                    1000, 1, mGnssListener);
+                    60000, 2, mGnssListener);
         }
     }
 
